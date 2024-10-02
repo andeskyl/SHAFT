@@ -1,0 +1,73 @@
+communicator:
+  verbose: True
+debug:
+  report_cost: False
+  debug_mode: False
+  validation_mode: False
+encoder:
+  precision_bits: 16
+cost:
+  estimate_cost: True
+  estimate_mode: "comm"
+functions:
+  max_method: "log_reduction"
+
+  # exponential function
+  exp_method: "limit"
+  exp_iterations: 8
+
+  # reciprocal configuration
+  reciprocal_method: "NR"
+  reciprocal_nr_iters: 10
+  reciprocal_log_iters: 1
+  reciprocal_all_pos: False
+  reciprocal_initial: null
+
+  # sqrt configuration
+  sqrt_method: "NR"
+  sqrt_nr_iters: 5
+  sqrt_nr_initial: null
+
+  # sigmoid / tanh configuration
+  sigmoid_tanh_method: "reciprocal"
+  sigmoid_tanh_terms: 32
+  sigmoid_fs_m: 5
+  sigmoid_fs_terms: 5
+  tanh_fs_m: 4
+  tanh_fs_terms: 5
+  tanh_ode_iter_num: 1024
+
+  # softmax configuration
+  softmax_method: "ode"
+  softmax_ode_clip: True
+  softmax_ode_iter_num: 16
+  softmax_ode_ub: 12
+  softmax_ode_lb: -4
+
+  # log configuration
+  log_iterations: 2
+  log_exp_iterations: 8
+  log_order: 8
+
+  # trigonometry configuration
+  trig_iterations: 10
+
+  # error function configuration
+  erf_method: "fourier"
+  erf_iterations: 8
+  erf_fs_period: 16
+  erf_fs_terms: 5
+  
+  # gelu function configuration
+  gelu_method: "fourier"
+  gelu_fs_period: 8
+  gelu_fs_terms: 8
+mpc:
+  active_security: False
+  provider: "TFP"
+  protocol: "beaver"
+nn:
+  dpsmpc:
+    protocol: "layer_estimation"
+    skip_loss_forward: True
+    cache_pred_size: True
