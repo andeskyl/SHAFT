@@ -22,7 +22,7 @@ pip install .
 
 ### 3. Install Transformers (for Hugging Face Integration)
 ```bash
-git clone https://github.com/huggingface/transformers
+git clone -b 'v4.45.0' --depth 1 https://github.com/huggingface/transformers
 pip install ./transformers
 ```
 
