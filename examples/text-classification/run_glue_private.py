@@ -20,6 +20,7 @@ import argparse
 import json
 import logging
 import os
+import time
 
 import datasets
 import evaluate
@@ -175,6 +176,7 @@ def parse_args():
 
 
 def main():
+    script_start_time = time.time()
     args = parse_args()
     # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them. The
     # information sent is the one passed as arguments along with your Python/PyTorch versions.
@@ -397,6 +399,7 @@ def main():
     try:
         eval_metric = metric.compute()
         print(f"metric: {eval_metric}")
+        print(f"running time: {time.time() - script_start_time}s")
 
         if args.output_dir is not None:
             all_results = {f"eval_{k}": v for k, v in eval_metric.items()}
