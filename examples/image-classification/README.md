@@ -6,11 +6,11 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 ## Running Experiments
-Computation cost of private ViT-base inference for a $224\times224$ RGB image:
+Computation cost of private ViT-base inference for a 224×224 RGB image:
 ```bash
 bash test_vit_base_224_comp.sh
 ```
-Communication cost of private ViT-base inference for a $224\times224$ RGB image:
+Communication cost of private ViT-base inference for a 224×224 RGB image:
 ```bash
 bash test_vit_base_224_comm.sh
 ```
