@@ -27,7 +27,7 @@ pip install ./transformers
 ```
 
 ## Running Experiments
-We have a set of sub-directories in the `examples` directory for reproducible experimental results. Additional dependencies for the experiments are included in the 'requirements.txt' file in each subdirectory under the folder. Please refer to the `README.md` file in the sub-directories for instructions on how to set up and run the experiments.
+We have a set of sub-directories in the `examples` directory for reproducible experimental results. Additional dependencies for the experiments are included in the `requirements.txt` file in each subdirectory under the folder. Please refer to the `README.md` file in the sub-directories for instructions on how to set up and run the experiments.
 
 1. `unit-test` - Costs of private softmax and GELU protocols.
 2. `text-classification` - Private inference costs of BERT-base and BERT-large.
