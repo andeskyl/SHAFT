@@ -619,8 +619,6 @@ def softmax(self, dim, **kwargs):
     if self.size(dim) == 1:
         return self.new(torch.ones_like(self.data))
 
-    print(f"softmax: x.size(): {self.size()}")
-
     if method == "ideal":
         return crypten.cryptensor(torch.softmax(self.get_plain_text(), dim=dim), device=self.device)
     if method == "reciprocal":
