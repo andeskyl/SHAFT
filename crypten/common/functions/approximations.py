@@ -27,6 +27,7 @@ __all__ = [
     "tanh",
     "erf",
     "gelu",
+    "silu",
     "softmax",
     "log_softmax",
 ]
@@ -516,11 +517,14 @@ def erf(tensor):
     else:
         raise ValueError(f"Unrecognized method {method} for erf")
 
-def _diff(x):
+def _diff_gelu(x):
     return torch.sign(x) * (torch.nn.functional.gelu(x, approximate="none") - torch.nn.functional.relu(x))
 
-def _diff_tanh(x):
+def _diff_gelu_tanh(x):
     return torch.sign(x) * (torch.nn.functional.gelu(x, approximate="tanh") - torch.nn.functional.relu(x))
+
+def _diff_silu(x):
+    return torch.sign(x) * (torch.nn.functional.silu(x) - torch.nn.functional.relu(x))
 
 def gelu(self, approximate="none"):
     r"""Compute the Gaussian error linear unit of a tensor"""
@@ -534,13 +538,13 @@ def gelu(self, approximate="none"):
 
         relu_x = self.relu()
         abs_x = 2 * relu_x - self
-        do_fs = abs_x < 4
+        do_fs = abs_x < width
 
         if approximate == "tanh":
-            #_, _, beta_sin = crypten.common.util.fourier_series(_diff_tanh, width, terms)
+            #_, _, beta_sin = crypten.common.util.fourier_series(_diff_gelu_tanh, width, terms)
             beta_sin = torch.tensor([-0.0817,-0.0812,-0.0424,-0.0175,-0.0079,-0.0043,-0.0026,-0.0017], device=self.device)
         else:
-            #_, _, beta_sin = crypten.common.util.fourier_series(_diff, width, terms)
+            #_, _, beta_sin = crypten.common.util.fourier_series(_diff_gelu, width, terms)
             beta_sin = torch.tensor([-0.0818,-0.0809,-0.0424,-0.0176,-0.0079,-0.0043,-0.0026,-0.0017], device=self.device)
         out = relu_x + do_fs * _fourier_series(abs_x, terms, period, beta_sin=beta_sin)
         return out
@@ -581,6 +585,27 @@ def gelu(self, approximate="none"):
     else:
         raise ValueError(f"Unrecognized method {method} for gelu")
 
+def silu(self):
+    r"""Compute the Sigmoid linear unit of a tensor"""
+    method = cfg.functions.silu_method
+    if method == "ideal":
+        return crypten.cryptensor(torch.nn.functional.silu(self.get_plain_text()), device=self.device)
+    elif method == "fourier":
+        period = cfg.functions.silu_fs_period
+        width = period / 2
+        terms = cfg.functions.silu_fs_terms
+
+        relu_x = self.relu()
+        abs_x = 2 * relu_x - self
+        do_fs = abs_x < width
+
+        #_, _, beta_sin = crypten.common.util.fourier_series(_diff_silu, width, terms)
+        beta_sin = torch.tensor([-0.1299, -0.1220, -0.0743, -0.0394, -0.0216, -0.0118, \
+                                 -0.0074, -0.0044, -0.0033, -0.0021, -0.0018, -0.0011], device=self.device)
+        out = relu_x + do_fs * _fourier_series(abs_x, terms, period, beta_sin=beta_sin)
+        return out
+    else:
+        raise ValueError(f"Unrecognized method {method} for silu")
 
 def softmax(self, dim, **kwargs):
     r"""Compute the softmax of a tensor's elements along a given dimension"""
@@ -593,6 +618,8 @@ def softmax(self, dim, **kwargs):
 
     if self.size(dim) == 1:
         return self.new(torch.ones_like(self.data))
+
+    print(f"softmax: x.size(): {self.size()}")
 
     if method == "ideal":
         return crypten.cryptensor(torch.softmax(self.get_plain_text(), dim=dim), device=self.device)
@@ -623,7 +650,6 @@ def softmax(self, dim, **kwargs):
         return g
     else:
         raise ValueError(f"Unrecognized method {method} for softmax")
-
 
 def log_softmax(self, dim, **kwargs):
     r"""Applies a softmax followed by a logarithm.

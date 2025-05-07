@@ -62,6 +62,11 @@ functions:
   gelu_method: "fourier"
   gelu_fs_period: 8
   gelu_fs_terms: 8
+
+  # silu function configuration
+  silu_method: "fourier"
+  silu_fs_period: 16
+  silu_fs_terms: 12
 mpc:
   active_security: False
   provider: "TFP"

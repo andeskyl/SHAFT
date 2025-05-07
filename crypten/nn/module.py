@@ -3258,6 +3258,25 @@ class GELU(Module):
             approximate=attributes.get("approximate", "none"),
         )
 
+class SiLU(Module):
+    r"""
+    Module that computes Sigmoid Linear Unit (SiLU) activations element-wise.
+
+    :math:`\text{SiLU}(x) = x / (1 + e^{-x})`
+    """
+    def __init__(self, inplace=False):
+        super().__init__()
+        if inplace:
+            logging.warning("Shaft SiLU module does not support inplace computation.")
+    
+    def forward(self, x):
+        return x.silu()
+    
+    @staticmethod
+    def from_onnx(attributes=None):
+        # TODO: implement from_onnx() here and _onnx_shaft_silu() in onnx_converter.py
+        raise NotImplementedError("SiLU module from_onnx not implemented")
+
 class Embedding(Module):
     r"""
     Module that converts an input token to an embedding vector.
