@@ -9,10 +9,13 @@ import logging
 
 import crypten
 import crypten.communicator as comm
+import math
 import torch
 import torch.distributed as dist
 from crypten.common.rng import generate_kbit_random_tensor, generate_random_ring_element
 from crypten.common.util import count_wraps
+from crypten.encoder import FixedPointEncoder
+from crypten.mpc.mpc import MPCTensor
 from crypten.mpc.primitives import ArithmeticSharedTensor, BinarySharedTensor
 
 from .provider import TupleProvider
@@ -61,14 +64,33 @@ class TrustedThirdParty(TupleProvider):
         r2 = ArithmeticSharedTensor.from_shares(r2, precision=0)
         return r, r2
 
-    def generate_trig_triple(self, size, m, terms, device=None):
+    def generate_trig_triple(self, size, period, terms, device=None):
         """Generate trigonometric triple of given size"""
-        # TODO: Implement generate_trig_triple() for TTP provider
-        raise NotImplementedError("ttp_provider generate_trig_triple not implemented")
+        generator = TTPClient.get().get_generator(device=device)
+        uv_shape = (terms,) + size
+        if comm.get().get_rank() == 0:
+            tuv = TTPClient.get().ttp_request("generate_trig_triple", device, size, period, terms)
+            t, u, v = tuv[0], tuv[1:1 + terms], tuv[1 + terms:]
+        else:
+            t = generate_random_ring_element(size, generator=generator, device=device)
+            u = generate_random_ring_element(uv_shape, generator=generator, device=device)
+            v = generate_random_ring_element(uv_shape, generator=generator, device=device)
+        t = ArithmeticSharedTensor.from_shares(t)
+        u = ArithmeticSharedTensor.from_shares(u)
+        v = ArithmeticSharedTensor.from_shares(v)
+        return t, u, v
     
     def generate_one_hot_pair(self, size, length, device=None):
-        # TODO: Implement generate_one_hot_pair() for TTP provider
-        raise NotImplementedError("ttp_provider generate_one_hot_pair not implemented")
+        generator = TTPClient.get().get_generator(device=device)
+        v_shape = (*size,) + (length,)
+        r = generate_random_ring_element(size, generator=generator, device=device) % length
+        if comm.get().get_rank() == 0:
+            v = TTPClient.get().ttp_request("generate_one_hot_pair", device, size, length)
+        else:
+            v = generate_random_ring_element(v_shape, generator=generator, device=device)
+        r = MPCTensor.from_shares(r, precision=0)
+        v = MPCTensor.from_shares(v, precision=0)
+        return r, v
 
     def generate_binary_triple(self, size0, size1, device=None):
         """Generate binary triples of given size"""
@@ -359,3 +381,27 @@ class TTPServer:
         rA = rB - self._get_additive_PRSS(size, remove_rank=True)
 
         return rA
+
+    def generate_trig_triple(self, size, period, terms):
+        """Generate trigonometric triple of given size"""
+        encoder = FixedPointEncoder()
+        t = torch.rand(size, device=self.device) * period
+        k = [i * 2 * math.pi / period for i in range(1, terms + 1)]
+        tk = torch.stack([i * t for i in k])
+        u, v = torch.sin(tk), torch.cos(tk)
+        t = encoder.encode(t, device=self.device).reshape(1, *t.shape)
+        u = encoder.encode(u, device=self.device)
+        v = encoder.encode(v, device=self.device)
+        t -= self._get_additive_PRSS(t.shape, remove_rank=True)
+        u -= self._get_additive_PRSS(u.shape, remove_rank=True)
+        v -= self._get_additive_PRSS(v.shape, remove_rank=True)
+        results = torch.cat([t.cpu(), u.cpu(), v.cpu()], dim=0)
+        return results
+
+    def generate_one_hot_pair(self, size, length):
+        encoder = FixedPointEncoder(precision_bits=0)
+        r = self._get_additive_PRSS(size) % length
+        v = torch.nn.functional.one_hot(r, num_classes=length)
+        v = encoder.encode(v, device=self.device)
+        v -= self._get_additive_PRSS(v.shape, remove_rank=True)
+        return v
