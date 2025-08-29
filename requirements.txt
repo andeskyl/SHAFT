@@ -1,5 +1,6 @@
 torch>=1.7.0
 torchvision>=0.9.1
+numpy<2
 omegaconf>=2.0.6
 onnx>=1.7.0
 pandas>=1.2.2
