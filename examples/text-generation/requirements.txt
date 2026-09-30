@@ -1,4 +1,4 @@
-accelerate==0.34.2
+accelerate==1.15.0
 sentencepiece != 0.1.92
 protobuf
 torch >= 1.3
