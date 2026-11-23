@@ -472,8 +472,10 @@ def _fourier_series(self, terms, period, alpha=None, beta_cos=None, beta_sin=Non
     provider = crypten.mpc.get_default_provider()
     t, u, v = provider.generate_trig_triple(self.size(), period, terms, device=self.device)
 
-    # reconstruct masked input (x-t)
+    # reconstruct masked input (x-t) % period
+    period_scaled = int(period * (2 ** cfg.encoder.precision_bits))
     delta = self - t
+    delta.share = delta.share % period_scaled
     delta = delta.get_plain_text()
 
     # compute sin(x-t), cos(x-t)
